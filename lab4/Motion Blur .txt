@@ -1,0 +1,37 @@
+import numpy as np
+import cv2 as cv
+import matplotlib.pyplot as plt
+
+img = cv.imread('person_1.png', 0)
+
+def impulse_kernel(N=5):
+    kernel = np.zeros((N,N))
+    for i in range(N):
+        for j in range(N):
+            if i == j:
+                kernel[i,j] = 1
+    return kernel
+
+gauss_kernel = impulse_kernel(15)
+a = int(img.shape[0]//2 - gauss_kernel.shape[0]//2)
+gauss_kernel_pad = np.pad(gauss_kernel, (a,a-1), 'constant', constant_values=(0))
+img = cv.resize(img,(gauss_kernel_pad.shape[0],gauss_kernel_pad.shape[0]))
+
+img_fft = np.fft.fft2(img)
+gauss_kernel_fft = np.fft.fft2(gauss_kernel_pad)
+
+img_conv = np.multiply(img_fft, gauss_kernel_fft)
+
+img_r = np.divide(img_conv, gauss_kernel_fft)
+
+b_img = np.fft.fftshift(np.real(np.fft.ifft2(img_conv)))
+r_img = np.real(np.fft.ifft2(img_r))
+
+fig = plt.figure(figsize=(15,15))
+ax = fig.add_subplot(131)
+ax.imshow(img, "gray");ax.set_title("Original Image")
+ax = fig.add_subplot(132)
+ax.imshow(b_img, "gray");ax.set_title("Motion Blurred Image")
+ax = fig.add_subplot(133)
+ax.imshow(r_img, "gray");ax.set_title("Reconstructed Image")
+plt.show()
